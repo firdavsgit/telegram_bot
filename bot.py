@@ -7,8 +7,9 @@ from keyboards import *
 from repository.db_laptop import Postgres
 from repository.db_monitor import Postgres_monitor
 from repository.db_monoblok import Postgres_monoblok
-token = "7280023472:AAEZyEluhQ1x9-sF3fDfC4jxfmsGIux94O4"
-click_token = "398062629:TEST:999999999_F91D8F69C042267444B74CC0B3C747757EB0E065"
+import os
+token = os.getenv("TOKEN")
+click_token = os.getenv("CLICK_TOKEN")
 bot = TeleBot(token)
 user_lang = {}
 @bot.message_handler(commands=["start"])
@@ -26,19 +27,16 @@ def menu(message):
     if message.text == "🇷🇺RU":
         lang = 'ru'
         bot.send_photo(chat_id, photo, caption=caption[lang])
-    bot.register_next_step_handler(message, choose_catalog)
-    user_lang[chat_id] = lang
-def choose_catalog(message):
-    chat_id = message.chat.id
-    lang = user_lang.get(chat_id)
     catalog = bot.send_message(chat_id, sel_catalogs[lang], reply_markup=generate_main_menu(lang))
     bot.register_next_step_handler(catalog, main_catalogs)
+    user_lang[chat_id] = lang
+
 
 def main_catalogs(message,product_id = 0,products = None ):
     chat_id = message.chat.id
     lang = user_lang.get(chat_id)
     if message.text == pagination_menu[lang]:
-        return choose_catalog(message)
+        return start(message)
 
     if message.text == menu_laptop[lang]:
         products = Postgres().select_data()
@@ -110,7 +108,7 @@ def invoice_checkout(query):
 def successful_payment(message):
     """ Отправить сообщение о успешной оплате """
     bot.send_message(message.chat.id, "Payment was successfully performed!")
-    return choose_catalog(message)
+    return menu(message)
 
 
 bot.polling(none_stop=True)
